@@ -274,7 +274,13 @@ export class TransferService {
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     // Group by date
-    const transfersByDate = {};
+    interface DailySummary {
+      date: string;
+      count: number;
+      amount: number;
+    }
+    
+    const transfersByDate: { [key: string]: DailySummary } = {};
     transfers.forEach(transfer => {
       const date = transfer.createdAt.toISOString().split('T')[0];
       

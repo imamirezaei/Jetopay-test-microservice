@@ -64,3 +64,16 @@ import {
   
     @Column({ type: 'jsonb', nullable: true })
     metadata: Record<string, any>;
+
+    @OneToMany(() => InterbankTransaction, transaction => transaction.settlementBatch)
+    transactions: InterbankTransaction[];
+
+    @CreateDateColumn({ name: 'created_at' })
+    createdAt: Date;
+
+    @UpdateDateColumn({ name: 'updated_at' })
+    updatedAt: Date;
+
+    @Column({ nullable: true })
+    completedAt: Date;
+}

@@ -5,7 +5,9 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     Index,
+    ManyToOne,
   } from 'typeorm';
+import { SettlementBatch } from './settlement-batch.entity';
   import { TransactionStatus } from '../enums/transaction-status.enum';
   import { TransactionType } from '../enums/transaction-type.enum';
   
@@ -74,4 +76,7 @@ import {
   
     @UpdateDateColumn({ name: 'updated_at' })
     updatedAt: Date;
+
+    @ManyToOne(() => SettlementBatch, batch => batch.transactions)
+    settlementBatch: SettlementBatch;
   }
