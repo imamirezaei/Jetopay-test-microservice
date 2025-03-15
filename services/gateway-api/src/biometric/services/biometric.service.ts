@@ -1,0 +1,161 @@
+// biometric/services/biometric.service.ts
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
+import { BiometricKey } from '../entities/biometric-key.entity';
+import { BiometricChallenge } from '../entities/biometric-challenge.entity';
+import { BiometricKeyResponseDto } from '../dto/biometric-key-response.dto';
+
+@Injectable()
+export class BiometricService {
+  constructor(
+    @InjectRepository(BiometricKey)
+    private biometricKeyRepository: Repository<BiometricKey>,
+    @InjectRepository(BiometricChallenge)
+    private biometricChallengeRepository: Repository<BiometricChallenge>,
+    private configService: ConfigService,
+  ) {}
+
+  async getAllKeys(userId: string): Promise<BiometricKeyResponseDto[]> {
+    const keys = await this.biometricKeyRepository.find({
+      where: { userId },
+    });
+
+    return keys.map(key => ({
+      id: key.id,
+      deviceId: key.deviceId,
+      deviceName: key.deviceName,
+      keyType: key.keyType,
+      lastUsed: key.lastUsed,
+      createdAt: key.createdAt,
+    }));
+  }
+
+  async registerBiometricKey(
+    userId: string,
+    publicKey: string,
+    deviceId: string,
+    deviceName: string,
+  ): Promise<BiometricKeyResponseDto> {
+    // Check if there's already a key for this device
+    let biometricKey = await this.biometricKeyRepository.findOne({
+      where: { userId, deviceId },
+    });
+
+    // If key exists, update it; otherwise create a new one
+    if (biometricKey) {
+      biometricKey.publicKey = publicKey;
+      biometricKey.deviceName = deviceName;
+      biometricKey.updatedAt = new Date();
+    } else {
+      biometricKey = this.biometricKeyRepository.create({
+        userId,
+        deviceId,
+        deviceName,
+        publicKey,
+        keyType: 'RSA',
+        keyAlgorithm: 'RS256',
+      });
+    }
+
+    const savedKey = await this.biometricKeyRepository.save(biometricKey);
+    
+    return {
+      id: savedKey.id,
+      deviceId: savedKey.deviceId,
+      deviceName: savedKey.deviceName,
+      keyType: savedKey.keyType,
+      lastUsed: savedKey.lastUsed,
+      createdAt: savedKey.createdAt,
+    };
+  }
+
+  async createChallenge(userId: string, deviceId: string): Promise<string> {
+    // Check if the device is registered
+    const keyExists = await this.biometricKeyRepository.findOne({
+      where: { userId, deviceId },
+    });
+
+    if (!keyExists) {
+      throw new NotFoundException('Biometric key not found for this device');
+    }
+
+    // Generate a random challenge
+    const challenge = crypto.randomBytes(32).toString('hex');
+    
+    // Save challenge to database
+    await this.biometricChallengeRepository.save({
+      userId,
+      deviceId,
+      challenge,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes expiry
+    });
+    
+    return challenge;
+  }
+
+  async verifyBiometric(
+    userId: string,
+    signature: string,
+    challenge: string,
+    deviceId: string,
+  ): Promise<boolean> {
+    // Fetch the user's biometric key for the device
+    const biometricKey = await this.biometricKeyRepository.findOne({
+      where: { userId, deviceId },
+    });
+
+    if (!biometricKey) {
+      throw new NotFoundException('Biometric key not found for this device');
+    }
+
+    // Fetch the challenge
+    const challengeRecord = await this.biometricChallengeRepository.findOne({
+      where: { userId, deviceId, challenge },
+    });
+
+    if (!challengeRecord || challengeRecord.expiresAt < new Date()) {
+      throw new UnauthorizedException('Invalid or expired challenge');
+    }
+
+    // Verify the signature
+    try {
+      const publicKey = crypto.createPublicKey(biometricKey.publicKey);
+      const verified = crypto.verify(
+        'sha256',
+        Buffer.from(challenge),
+        {
+          key: publicKey,
+          padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
+        },
+        Buffer.from(signature, 'base64'),
+      );
+
+      // Delete the used challenge regardless of verification result
+      await this.biometricChallengeRepository.remove(challengeRecord);
+
+      // Update last used timestamp if verification succeeded
+      if (verified) {
+        biometricKey.lastUsed = new Date();
+        await this.biometricKeyRepository.save(biometricKey);
+      }
+
+      return verified;
+    } catch (error) {
+      // Delete the used challenge
+      await this.biometricChallengeRepository.remove(challengeRecord);
+      throw new UnauthorizedException('Biometric verification failed');
+    }
+  }
+
+  async removeDeviceKey(userId: string, deviceId: string): Promise<boolean> {
+    const result = await this.biometricKeyRepository.delete({ userId, deviceId });
+    return result.affected > 0;
+  }
+
+  async removeAllUserKeys(userId: string): Promise<void> {
+    await this.biometricKeyRepository.delete({ userId });
+  }
+}

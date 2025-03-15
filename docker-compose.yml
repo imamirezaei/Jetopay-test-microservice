@@ -1,0 +1,373 @@
+version: '3.8'
+
+services:
+  # Gateway API Service
+  gateway-api:
+    build:
+      context: ./services/gateway-api
+      dockerfile: Dockerfile
+    container_name: jetopay-gateway-api
+    restart: unless-stopped
+    ports:
+      - "3007:3007"
+    environment:
+      - NODE_ENV=development
+      - PORT=3007
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=jetopay_gateway
+      - DB_SYNC=true
+      - JWT_SECRET=your-secret-key-should-be-stored-in-env-vars
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CORS_ORIGIN=*
+    volumes:
+      - ./services/gateway-api:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
+    networks:
+      - jetopay-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # PSP Service
+  psp-service:
+    build:
+      context: ./services/psp
+      dockerfile: Dockerfile
+    container_name: jetopay-psp-service
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=development
+      - PORT=3003
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=jetopay_psp
+      - DB_SYNC=true
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./services/psp:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
+    networks:
+      - jetopay-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Bank Source Service
+  bank-source-service:
+    build:
+      context: ./services/bank-source
+      dockerfile: Dockerfile
+    container_name: jetopay-bank-source-service
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=jetopay_bank_source
+      - DB_SYNC=true
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./services/bank-source:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
+    networks:
+      - jetopay-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Bank Destination Service
+  bank-destination-service:
+    build:
+      context: ./services/bank-destination
+      dockerfile: Dockerfile
+    container_name: jetopay-bank-destination-service
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=jetopay_bank_destination
+      - DB_SYNC=true
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./services/bank-destination:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
+    networks:
+      - jetopay-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Shaparak Integration Service
+  shaparak-service:
+    build:
+      context: ./services/shaparak
+      dockerfile: Dockerfile
+    container_name: jetopay-shaparak-service
+    restart: unless-stopped
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=development
+      - PORT=3005
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=jetopay_shaparak
+      - DB_SYNC=true
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - SHAPARAK_API_URL=https://api.shaparak.ir
+      - SHAPARAK_MERCHANT_ID=test-merchant-id
+      - SHAPARAK_TERMINAL_ID=test-terminal-id
+    volumes:
+      - ./services/shaparak:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
+    networks:
+      - jetopay-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Shetab Network Service
+  shetab-service:
+    build:
+      context: ./services/shetab
+      dockerfile: Dockerfile
+    container_name: jetopay-shetab-service
+    restart: unless-stopped
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=development
+      - PORT=3004
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=jetopay_shetab
+      - DB_SYNC=true
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - SHETAB_API_URL=https://api.shetab.ir
+    volumes:
+      - ./services/shetab:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
+    networks:
+      - jetopay-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Hub Shaparak Service
+  hub-shaparak-service:
+    build:
+      context: ./services/hub-shaparak
+      dockerfile: Dockerfile
+    container_name: jetopay-hub-shaparak-service
+    restart: unless-stopped
+    ports:
+      - "3006:3006"
+    environment:
+      - NODE_ENV=development
+      - PORT=3006
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=jetopay_hub_shaparak
+      - DB_SYNC=true
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CBI_API_URL=https://api.cbi.ir
+      - CBI_API_KEY=test-cbi-api-key
+    volumes:
+      - ./services/hub-shaparak:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
+    networks:
+      - jetopay-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: jetopay-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_MULTIPLE_DATABASES=jetopay_gateway,jetopay_psp,jetopay_bank_source,jetopay_bank_destination,jetopay_shaparak,jetopay_shetab,jetopay_hub_shaparak
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-multiple-postgres-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-postgres-dbs.sh
+    networks:
+      - jetopay-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RabbitMQ for message queue
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: jetopay-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"   # AMQP protocol port
+      - "15672:15672" # Management UI port
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - jetopay-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: jetopay-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - jetopay-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Prometheus for monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: jetopay-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - jetopay-network
+    depends_on:
+      - gateway-api
+      - psp-service
+      - bank-source-service
+      - bank-destination-service
+      - shaparak-service
+      - shetab-service
+      - hub-shaparak-service
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: jetopay-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - jetopay-network
+    depends_on:
+      - prometheus
+
+volumes:
+  postgres-data:
+  rabbitmq-data:
+  redis-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  jetopay-network:
+    driver: bridge

@@ -1,0 +1,97 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Docker volumes
+postgres-data/
+rabbitmq-data/
+redis-data/
+prometheus-data/
+grafana-data/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# IDE - JetBrains
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea_modules/
+
+# IDE - WebStorm
+.idea/
+*.iws
+
+# Testing
+/coverage
+/.nyc_output
+
+# Misc
+.DS_Store
+*.pem
+.npm
+.eslintcache
+.yarn-integrity
+
+# Deployment / CI
+.vercel
+.serverless/
+.fusebox/
+.dynamodb/
+.webpack/
+.next/
+out/
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Nest.js
+**/nest-cli.json
+**/tsconfig.build.json
+
+# Security / Credentials
+*.pem
+*.cert
+*.key
+
+# Project specific
+private/
+tmp/
+temp/
+.cache/
